@@ -6,7 +6,7 @@ categories: aosp android
 ---
 ![](https://i.imgur.com/lMkLN3v.png)
 
-맥북을 사용중인데 [AOSP(Android Open Source Project)](https://source.android.com/) 코드를 수정하여 다양한 버전의 AVD를 만들면서 이것저것 테스트하고 싶어졌습니다. 그런데 Google에서 2021년 6월 22일부터 macOS에서의 AOSP 빌드 지원을 공식적으로 종료했습니다. 그래서 AOSP 빌드가 가능한 방법이 없을까 알아보던 중에 orbstack을 발견하여 삽질을 시작했습니다!
+맥북을 사용중인데 어느날 문득 [AOSP(Android Open Source Project)](https://source.android.com/) 코드를 수정하여 다양한 버전의 AVD를 만들면서 이것저것 테스트하고 싶어졌습니다. 그런데 Google에서 2021년 6월 22일부터 macOS에서의 AOSP 빌드 지원을 공식적으로 종료해버렸어요. 그래서 AOSP 빌드가 가능한 방법이 없을까 알아보던 중에 orbstack을 발견하여 삽질을 시작했습니다!
 
 ## OrbStack
 
