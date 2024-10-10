@@ -1,6 +1,7 @@
 title: d3xter Research Lab
 author: d3xter
 email: d3xter0lab@gmail.com
+url: "https://d3xter-lab.github.io"
 description: > # this means to ignore newlines until "show_exerpts:"
   A diverse exploration of security topics.
 show_excerpts: false # set to true to show excerpts on the homepage
