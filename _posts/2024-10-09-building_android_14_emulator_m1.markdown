@@ -6,23 +6,23 @@ categories: aosp android
 ---
 ![](https://i.imgur.com/lMkLN3v.png)
 
-맥북을 사용중인데 어느날 문득 [AOSP(Android Open Source Project)](https://source.android.com/) 코드를 수정하여 다양한 버전의 AVD를 만들면서 이것저것 테스트하고 싶어졌습니다. 그런데 Google에서 2021년 6월 22일부터 macOS에서의 AOSP 빌드 지원을 공식적으로 종료해버렸어요. 그래서 AOSP 빌드가 가능한 방법이 없을까 알아보던 중에 orbstack을 발견하여 삽질을 시작했습니다!
+One day, I suddenly felt like doing something with [AOSP(Android Open Source Project)](https://source.android.com/), for example, building various versions of AVDs, and running some tests. But then, I found that Google officially stopped supporting AOSP builds on macOS from June 22, 2021. Oooppps! But I started looking for other ways to build AOSP, and that’s when I found OrbStack and decided to give it a try!
 
 ## OrbStack
 
-[OrbStack](https://orbstack.dev/)은 프로그램 자체가 엄청 가볍고 Docker 컨테이너와 Linux를 빠르고 쉽게 실행하도록 도와주는 macOS 전용 앱입니다. Docker Desktop의 느린 속도와 짜증나는 리소스 점유율에 질린 유저들이 OrbStack을 사용하고는 모두 찬사를 아끼지 않았었죠. 지금은 베타버전 종료 이후 유료모델을 도입했으나 개인 사용자들은 무료로 사용이 가능합니다.
+[OrbStack](https://orbstack.dev/) is a lightweight macOS app that makes it quick and easy to run Docker containers and Linux. For people frustrated with Docker Desktop’s slow speed and high resource usage, OrbStack has become very popular. Although it’s now a paid service after the beta ended, personal users can still use it for free.
 
 ## Why OrbStack
 
-OrbStack에는 가상머신이라고 리눅스 머신을 생성하는 기능이 있습니다. 그러나 기존 Parallels, UTM 등과 다르게 macOS 호스트와 자연스럽게 통합된 방식으로 가상 머신 사용이 가능합니다. 정확하게는 비교 대상이 Parallels, UTM 보다는 윈도우의 WSL을 생각하면 될 것 같습니다. WSL 리눅스는 생성/삭제가 간편하고 윈도우의 파일시스템 등과 굉장히 결합이 잘 되어있죠? OrbStack 가상머신이 딱 그렇습니다. 파일시스템/네트워크 등 호스트 시스템과 밀접하게 결합되어 세팅 및 사용이 매우 쉽습니다. 부팅은 1초컷이죠.
+OrbStack has a feature that lets you create Linux virtual machines. But unlike Parallels or UTM, these VMs are more smoothly integrated with macOS. It’s kind of like WSL (Windows Subsystem for Linux) on Windows, where everything works well with the host system’s files and network. OrbStack’s VMs are just like that—they’re easy to set up and use, and they boot up in just a second!
 
-여기에 더해 Rosetta을 이용한 x86_64/amd64 머신도 생성이 가능합니다. 여기서 이제 AOSP 빌드에 대한 힌트를 얻을 수 있습니다. 우리는 OrbStack의 가상머신 중 Rosetta를 이용한 우분투 리눅스(Intel)를 생성하여 해당 환경에서 AOSP 빌드를 진행할 것입니다.
+You can also use Rosetta to create x86_64/amd64 machines. And this is where we get a hint for building AOSP! We’re going to create an Intel Ubuntu machine (using Rosetta) in OrbStack and build AOSP in that environment.
 
 ![](https://i.imgur.com/4SFIYXP.png)
 
 ## Build Environment
 
-빌드 환경은 아래와 같습니다.
+Here’s my setup:
 * MacBook M1 Pro
 * Sonoma 14.7
 * Memory 16 GB
@@ -31,9 +31,9 @@ OrbStack에는 가상머신이라고 리눅스 머신을 생성하는 기능이 
 
 ## Build Process
 
-AOSP 빌드를 위한 기본적인 설정은 생략할게요. 이미 다양한 글에서 이 부분을 다루고 있기 때문에 바로 커멘드부터 시작하겠습니다. 그리고 Android 14의 안정화 버전인 Generic System Image 를 위한 android14-gsi 태그로 코드를 다운로드하도록 하겠습니다. `(다른 태그는.. 테스트안해봄)`
+I’ll skip the basic AOSP setup since there are plenty of guides out there. Let’s jump right into the commands. We’ll be downloading the code with `android14-gsi` tag for Android 14’s stable Generic System Image. (I haven’t tested other tags yet!)
 
-아! 여기서 <u>주의할 점은 절대로 호스트의 디스크를 사용하지 마세요</u>. diskutil로 case-sensitive 파티션을 생성해서 진행하면 된다는 이전 AOSP 빌드 관련 글들이 있으나 그렇게 진행했을때 특정 img 파일 빌드할때 계속 에러가 납니다. 그냥 OrbStack이 만들어준 리눅스 디스크 안에서 코드를 다운로드하고 빌드합시다.
+Oh, one important thing: <u>don’t use your host machine’s disk</u>. Some older guides suggest creating a case-sensitive partition with diskutil, but you may meet errors when building some image files that way. Instead, download and build the code directly inside the Linux disk that OrbStack provides.
 
 ```bash
 $ cd ~/aosp/android14-gsi/
@@ -41,7 +41,7 @@ $ repo init --depth=1 -u https://android.googlesource.com/platform/manifest -b a
 $ repo sync -c --no-clone-bundle --no-tags -j2
 ```
 
-여기까지 하면 AOSP 코드 다운로드가 완료됩니다. `-j` 옵션의 경우, 병렬 작업 수를 지정하는건데 메모리 16 GB 가지고 너무 많이 지정하면 메모리 부족으로 빌드에 실패합니다ㅠ Max 쓰시거나 램이 더 많으시면 더 늘리셔도 됩니다.
+After this, the AOSP code should be downloaded. As for `-j` option (which controls how many parallel jobs are run), don’t set it too high if you have only 16 GB of RAM like me—you might run out of memory and the build will fail. If you have more RAM, feel free to increase the number.
 
 ```bash
 $ . build/envsetup.sh
@@ -51,9 +51,9 @@ $ m emu_img_zip -j 2
 
 ### Error 1: Insufficient Memory
 
-일단 AVD를 위한 AOSP 빌드하는 전체 커멘드는 위와 같습니다. 그런데 이제 에러들이 툭툭 나오게 될거에요. 우선 이전에 언급한 메모리 부분. 32GB 이상을 사용하시는 분은 아마 별 문제 없을건데 저같은 16GB 메모리의 경우, 메모리 문제로 빌드에 실패하는 경우가 있습니다.
+That’s the full command for building AOSP for AVD. But as expected, errors might start popping up. The first issue, as mentioned earlier, is memory. If you have 32 GB or more, you probably won’t have any problems. But with 16 GB, you might hit memory issues that cause the build to fail.
 
-그래서 저는 swap 메모리를 늘려주었습니다. 저의 경우, 32G를 잡아주었습니다.
+To solve this, I increased my swap memory to 32 GB.
 ```bash
 $ sudo swapon --show
 NAME       TYPE       SIZE USED  PRIO
@@ -64,7 +64,7 @@ NAME       TYPE       SIZE USED  PRIO
 
 ### Error 2: lunch infinite loop
 
-lunch 커맨드 실행시 무한루프에 빠집니다. 1시간.. 2시간... 4시간... 아무리 기다려도 다음으로 안 넘어갑니다. 그래서 CPU 사용률을 보면,
+Next, when running the lunch command, I ran into an issue where it seemed stuck in a loop. After waiting for 1 hour, 2 hours... nothing happened. I checked the CPU usage and saw that a process called nsjail was stuck at 100%. [nsjail](https://github.com/google/nsjail) is a tool made by Google to isolate processes during the AOSP build.
 
 ```bash
 $ top
@@ -87,14 +87,13 @@ MiB Swap:  45801.5 total,  43037.4 free,   2764.1 used.   3918.7 avail Mem
     .
     .
 ```
-
-nsjail 이라는 프로세스가 CPU 100%를 먹고 변화가 없는 것을 볼 수 있어요. [nsjail](https://github.com/google/nsjail)은 Google에서 만든 리눅스를 위한 프로세스 격리 도구입니다. AOSP 빌드 시에 빌드 프로세스를 호스트 시스템과 격리하기 위하여 구글에서 도입한 절차로 예상됩니다. 즉, 없어도 됩니다.
+But the thing is, you don’t really need it.
 
 ```bash
 $ mv prebuilds/build-tools/linux-x86/bin/nsjail prebuilds/build-tools/linux-x86/bin/nsjail.old
 ```
 
-이렇게 하면 lunch 가 아주 빠르게 동작을 하게 되고 다음과 같은 경고 메시지가 보일 것입니다. 그럼 성공!
+Skipping nsjail allowed the lunch command to run successfully without any errors. And you may get the following warning message. Everything worked as expected!
 
 ```bash
 20:00:03 ************************************************************
@@ -111,27 +110,27 @@ $ mv prebuilds/build-tools/linux-x86/bin/nsjail prebuilds/build-tools/linux-x86/
 
 ### Error 3: Dex2oat failed to compile a boot image.
 
-저 위에 에러 2개가 잡으면 빌드가 80-90% 까지 문제없이 진행됩니다. 그러다 갑자기 Dex2oat 실패 메시지가 나옵니다.
+After fixing above 2 errors, the build was almost done(maybe 80-90%?). But suddenly I got a Dex2oat error.
 
 ```bash
 ERROR: Dex2oat failed to compile a boot image.It is likely that the boot classpath is inconsistent.Rebuild with ART_BOOT_IMAGE_EXTRA_ARGS="--runtime-arg -verbose:verifier" to see verification errors.
 ```
 
-부트 이미지 내 DEX 파일을 Dex2oat를 통해 native machine code로 변환하는 과정에서 에러가 난 것으로 보입니다. 이 문제가 리눅스 커널 버전과 관련된다는 코멘트가 stackoverflow에 있으나 우리는 OrbStack(Linux kernel 6.10.12)을 통하여 리눅스를 사용하고 있어서 리눅스 커널을 다운그레이드(Linux kernel 5.x.x)하기 쉽지 않습니다.
+Dex2oat is the process of converting DEX files in the boot image to native machine code. This error seems to be caused by that process. Some posts on StackOverflow suggest that it’s related to the kernel version, but since we’re using OrbStack (which runs Linux kernel 6.10.12), downgrading the kernel to 5.x.x isn’t really an option.
 
-그래서 우리는 아예 코드를 수정하여 Dex2oat를 비활성화시켜 부트 이미지에 대한 사전 최적화를 수행하지 않도록 하려고 합니다.
+So, instead, we’ll modify the code to turn off Dex2oat, skipping pre-optimization for the boot image.
 
 1. `build/core/board_config.mk`
 ```bash
  205 # Conditional to building on linux, as dex2oat currently does not work on darwin.
  206 ifeq ($(HOST_OS),linux)
- 207   WITH_DEXPREOPT := false # true -> false 변경
+ 207   WITH_DEXPREOPT := false # true -> false
  208 endif
 ```
 2. `build/core/dex_preopt_config.mk`
 ```bash
  71   # Non eng linux builds must have preopt enabled so that system server doesn't run as interpreter
- 72   # 전부 주석 처리
+ 72   # make all as comments!
  73   #ifeq (,$(filter eng, $(TARGET_BUILD_VARIANT)))
  74   #  ifneq (true,$(WITH_DEXPREOPT))
  75   #    ifneq (true,$(WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY))
@@ -145,7 +144,7 @@ ERROR: Dex2oat failed to compile a boot image.It is likely that the boot classpa
 
 ### Install AVD Image
 
-위 3개의 에러를 잡아주면 드디어 M1 에서 AVD를 위한 AOSP 빌드가 완료됩니다. 다음 메시지에는 6시간 걸렸다고 나오지만.. 실제로는 위 에러때문에 이어서 빌드하고.. 이어서 빌드하고.. 다 합치면 2일 정도 걸린것같네요? 맥북 사양이 좋으면 더 빠를 것 같아요.
+Once you fix these 3 errors, you should be able to finish the AOSP build for AVD on Apple M1! The log said it took 6 hours, but in reality, with all the retries due to the errors, it took me about 2 days. I’m sure it’ll be faster on a more powerful machine.
 
 ```bash
 [ 99% 12962/12964] Create system-qemu.img now
@@ -156,13 +155,13 @@ out/host/linux-x86/bin/sgdisk --clear out/target/product/emulator64_arm64/system
 #### build completed successfully (06:08:40 (hh:mm:ss)) ####
 ```
 
-완료되면 AVD 생성을 위해 빌드된 이미지를 sdk 경로(예, /Source/Android/sdk/)에 넣어줘야합니다.
+After the build is complete, you’ll need to move the built image to the Android SDK path (e.g., /Source/Android/sdk/).
 
 ```bash
 $ mkdir -p /Source/Android/sdk/system-images/android-34/aosp_custom/ && unzip -o out/target/product/emulator64_arm64/sdk-repo-linux-system-images-eng.d3xter.zip -d /Source/Android/sdk/system-images/android-34/aosp_custom/
 ```
 
-빌드된 압축파일을 풀어주고 이미지를 확인해보면 다음과 같습니다.
+When you extract the compressed file and check the image, it should look something like this:
 
 ```bash
 $ d3xter@ubuntu:/Source/Android/sdk/system-images/android-34/aosp_custom$ tree ./
@@ -201,7 +200,7 @@ $ d3xter@ubuntu:/Source/Android/sdk/system-images/android-34/aosp_custom$ tree .
 
 ### Create Image Profile
 
-다른 에뮬레이터 이미지 경로에 가면 `package.xml`이라는 파일이 있습니다. 해당 파일은 에뮬레이터 이미지 프로파일 파일로 Android Studio 에서 해당 파일을 기반으로 이미지를 인식합니다. 저는 android-34 > google_api_playstore 이미지의 파일을 복사해서 수정하였습니다. localPackage 태그의 path 값은 압축해제한 경로와 반드시 일치해야 합니다.
+In the folder where the other emulator images are stored, you’ll find a `package.xml` file. This file helps Android Studio recognize the image. I copied and modified the package.xml file from the android-34 > google_api_playstore image. Make sure the path in the localPackage tag matches exactly with the extracted path.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -516,20 +515,21 @@ $ d3xter@ubuntu:/Source/Android/sdk/system-images/android-34/aosp_custom$ tree .
 
 ### Create AVD
 
-Android Studio 을 실행하고 `Device Manager`을 실행하여 일반적인 AVD 생성 창을 불러옵니다. 저는 Pixel 7 하드웨어 프로필을 선택하겠습니다.
+Launch Android Studio, go to `Device Manager`, and open the AVD creation window. I chose the Pixel 7 hardware profile.
 
 ![](https://i.imgur.com/XkULSgI.png)
 
-ARM Images 탭에 가면 우리가 만들어준 프로파일을 기반으로 한 이미지가 표시되는 것을 확인할 수 있습니다. 가볍게 선택하시고 넘어가주세요. 다음 AVD 설정은 입맛에 맞게 설정해주세요.
+In the ARM Images tab, you’ll see the profile we just created. Go ahead and select it. You can adjust the AVD settings to your liking.
 
 ![](https://i.imgur.com/qEyUNaZ.png)
 
-생성된 AVD를 실행하면 드디어 빌드된 안드로이드가 나타나는 것을 볼 수 있어요! 안드로이드14 만세!!
-이제 AOSP 코드 이것저것 만져봅시다~
+When you run the AVD, you should finally see the Android 14 image we built! Woohoo! Now it’s time to play around with AOSP and have fun customizing it!
+
 <p align="center">
 	<img src="https://i.imgur.com/wFAa8yP.png" width=300>
 	<img src="https://i.imgur.com/XYq5vpT.png" width=300>
 </p>
+
 ## Reference
 
 * https://shumxin.github.io/2024/04/05/build-aosp-in-mackbook-pro-m3-max/
